@@ -1,0 +1,6 @@
+OptionMenu "DR_RunOver"
+{
+	Class "DR_RunOverMenu"
+	Title " "
+	Command "End run (the launcher rolls a new dungeon)", "quit"
+}

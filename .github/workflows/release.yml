@@ -1,0 +1,82 @@
+name: Release
+
+# Push a tag like v0.1.0 to build the downloads and publish a GitHub release.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  windows:
+    name: Windows .exe
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Stamp version from tag
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: bash
+        run: sed -i "s/^VERSION = \".*\"/VERSION = \"${GITHUB_REF_NAME#v}\"/" doomrogue.py
+      - name: Build DoomRogue.exe
+        run: |
+          pip install pyinstaller==6.*
+          pyinstaller --onefile --name DoomRogue --icon NONE --add-data "mod;mod" doomrogue.py
+      - name: Self-test the .exe (downloads GZDoom + Freedoom, loads the mod)
+        continue-on-error: true
+        shell: bash
+        run: |
+          mkdir smoke && cp dist/DoomRogue.exe smoke/
+          cd smoke && ./DoomRogue.exe --self-test
+      - name: Package
+        shell: bash
+        run: |
+          mkdir -p pkg/DoomRogue
+          cp dist/DoomRogue.exe pkg/DoomRogue/
+          cp packaging/README-WINDOWS.txt pkg/DoomRogue/README.txt
+          cp LICENSE pkg/DoomRogue/LICENSE.txt
+          cd pkg && 7z a -tzip ../DoomRogue-windows.zip DoomRogue >/dev/null
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows
+          path: DoomRogue-windows.zip
+
+  source:
+    name: macOS / Linux zip
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Stamp version from tag
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: sed -i "s/^VERSION = \".*\"/VERSION = \"${GITHUB_REF_NAME#v}\"/" doomrogue.py
+      - name: Package
+        run: |
+          mkdir -p pkg/DoomRogue
+          cp -r mod doomrogue.py dr_gen.py DoomRogue.command LICENSE pkg/DoomRogue/
+          cp packaging/README-MAC-LINUX.txt pkg/DoomRogue/README.txt
+          chmod +x pkg/DoomRogue/DoomRogue.command pkg/DoomRogue/doomrogue.py
+          cd pkg && zip -qr ../DoomRogue-mac-linux.zip DoomRogue
+      - uses: actions/upload-artifact@v4
+        with:
+          name: source
+          path: DoomRogue-mac-linux.zip
+
+  publish:
+    name: Publish release
+    needs: [windows, source]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            DoomRogue-windows.zip
+            DoomRogue-mac-linux.zip
+          generate_release_notes: true

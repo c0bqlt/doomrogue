@@ -1,0 +1,419 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DoomRogue</title>
+<meta name="description" content="DoomRogue is a free roguelike for Doom: every run is a brand-new 12-floor dungeon with perks, loot rarities and permadeath.">
+<meta property="og:title" content="DoomRogue">
+<meta property="og:description" content="Doom, but every run is a brand-new dungeon. One life.">
+<meta property="og:image" content="img/hero.jpg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=IBM+Plex+Sans:wght@400;600&family=IBM+Plex+Mono&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0c0a09;
+  --panel: #171210;
+  --panel-2: #211915;
+  --line: #3a2a22;
+  --text: #ebe3da;
+  --muted: #a8998c;
+  --red: #d42a1f;
+  --red-dark: #8f150f;
+  --gold: #f2b631;
+  --green: #4ade5c;
+  --blue: #4c8dff;
+  --purple: #c35cff;
+  --max: 1080px;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 16px/1.6 "IBM Plex Sans", system-ui, sans-serif;
+}
+body::before {               /* faint scanlines */
+  content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 50;
+  background: repeating-linear-gradient(to bottom, rgba(0,0,0,.18) 0 1px, transparent 1px 3px);
+}
+a { color: var(--gold); }
+a:hover { color: #fff; }
+img { max-width: 100%; height: auto; display: block; }
+code, kbd, .mono { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: .92em; }
+code { background: var(--panel-2); border: 1px solid var(--line); padding: 1px 6px; border-radius: 3px; }
+kbd { background: #2a201b; border: 1px solid #5a4337; border-bottom-width: 3px; padding: 0 6px; border-radius: 3px; }
+.pixel { font-family: "Press Start 2P", monospace; letter-spacing: .02em; }
+.wrap { max-width: var(--max); margin: 0 auto; padding: 0 16px; }
+
+/* nav */
+nav.top {
+  position: sticky; top: 0; z-index: 40;
+  background: rgba(12,10,9,.92); backdrop-filter: blur(6px);
+  border-bottom: 2px solid var(--red-dark);
+}
+nav.top .wrap { display: flex; align-items: center; gap: 18px; height: 56px; overflow-x: auto; }
+nav.top .brand { font-family: "Press Start 2P", monospace; font-size: 13px; color: var(--red); text-decoration: none; white-space: nowrap; text-shadow: 2px 2px 0 #000; }
+nav.top a.l { color: var(--muted); text-decoration: none; font-size: 14px; white-space: nowrap; }
+nav.top a.l:hover { color: var(--text); }
+nav.top .spacer { flex: 1; }
+
+/* hero */
+header.hero { padding: 56px 0 40px; background:
+  radial-gradient(ellipse at 50% 0%, rgba(212,42,31,.28), transparent 60%); }
+.hero-grid { display: grid; grid-template-columns: 1.05fr 1fr; gap: 36px; align-items: center; }
+h1.logo {
+  font-family: "Press Start 2P", monospace; font-size: clamp(30px, 6vw, 56px); line-height: 1.1;
+  margin: 0 0 18px; color: var(--red);
+  text-shadow: 3px 3px 0 #000, 6px 6px 0 var(--red-dark);
+}
+.tagline { font-size: 20px; color: var(--text); margin: 0 0 8px; }
+.sub { color: var(--muted); margin: 0 0 26px; }
+.btn {
+  display: inline-flex; align-items: center; gap: 10px;
+  font-family: "Press Start 2P", monospace; font-size: 12px; line-height: 1.4;
+  padding: 14px 18px; text-decoration: none; color: #fff;
+  background: var(--red); border: 0; box-shadow: 0 4px 0 var(--red-dark), 0 0 0 2px #000;
+  transition: transform .06s;
+}
+.btn:hover { color: #fff; transform: translateY(-1px); background: #e8352a; }
+.btn:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--red-dark), 0 0 0 2px #000; }
+.btn.alt { background: var(--panel-2); box-shadow: 0 4px 0 #000, 0 0 0 2px var(--line); }
+.btn small { font-family: "IBM Plex Sans", sans-serif; font-size: 12px; opacity: .85; letter-spacing: 0; }
+.dl-row { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; }
+.other-dl { margin-top: 14px; font-size: 14px; color: var(--muted); }
+.shot { border: 3px solid #000; outline: 2px solid var(--line); box-shadow: 0 10px 30px rgba(0,0,0,.6); }
+.ver { display: inline-block; margin-left: 6px; color: var(--muted); font-size: 13px; }
+
+/* sections */
+section { padding: 56px 0; border-top: 1px solid #1f1814; }
+h2 { font-family: "Press Start 2P", monospace; font-size: 20px; color: var(--gold); margin: 0 0 22px; text-shadow: 2px 2px 0 #000; }
+h3 { font-size: 18px; margin: 0 0 8px; }
+.lead { color: var(--muted); max-width: 720px; margin-top: -8px; }
+
+.features { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+.card { background: var(--panel); border: 2px solid var(--line); padding: 18px; }
+.card .ico { font-family: "Press Start 2P", monospace; color: var(--red); font-size: 18px; margin-bottom: 10px; }
+.card p { margin: 0; color: var(--muted); font-size: 15px; }
+
+.gallery { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.gallery figure { margin: 0; }
+.gallery figcaption { color: var(--muted); font-size: 13px; padding-top: 6px; }
+.gallery a { display: block; }
+
+.install { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.install .card h3 { font-family: "Press Start 2P", monospace; font-size: 13px; color: var(--text); margin-bottom: 14px; }
+.install ol { padding-left: 20px; margin: 0; color: var(--text); }
+.install li { margin-bottom: 8px; font-size: 15px; }
+.note { border-left: 3px solid var(--gold); background: #1d1610; padding: 10px 12px; color: var(--muted); font-size: 14px; margin-top: 12px; }
+.card.current { border-color: var(--red); }
+.card.current h3::after { content: "  ← you"; color: var(--red); font-size: 10px; }
+
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; align-items: start; }
+ul.tight { padding-left: 20px; margin: 0; }
+ul.tight li { margin-bottom: 6px; }
+
+table { width: 100%; border-collapse: collapse; background: var(--panel); border: 2px solid var(--line); }
+th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid #2a201b; vertical-align: top; font-size: 15px; }
+th { font-family: "Press Start 2P", monospace; font-size: 10px; color: var(--muted); background: var(--panel-2); }
+td.n { white-space: nowrap; font-weight: 600; }
+td.r { font-family: "IBM Plex Mono", monospace; color: var(--muted); white-space: nowrap; }
+.table-wrap { overflow-x: auto; }
+.rar { font-weight: 600; }
+.rar.c { color: #d8d0c8; } .rar.u { color: var(--green); } .rar.r { color: var(--blue); }
+.rar.e { color: var(--purple); } .rar.l { color: var(--gold); }
+
+details { background: var(--panel); border: 2px solid var(--line); margin-bottom: 10px; }
+summary { cursor: pointer; padding: 14px 16px; font-weight: 600; list-style: none; }
+summary::-webkit-details-marker { display: none; }
+summary::before { content: "+"; font-family: "Press Start 2P", monospace; color: var(--red); margin-right: 12px; font-size: 12px; }
+details[open] summary::before { content: "−"; }
+details > div { padding: 0 16px 14px 44px; color: var(--muted); }
+
+footer { padding: 40px 0 60px; border-top: 2px solid var(--red-dark); color: var(--muted); font-size: 14px; }
+footer .pixel { color: var(--red); font-size: 12px; }
+
+@media (max-width: 860px) {
+  .hero-grid, .two { grid-template-columns: 1fr; }
+  .features { grid-template-columns: 1fr 1fr; }
+  .gallery, .install { grid-template-columns: 1fr; }
+}
+@media (max-width: 520px) {
+  .features { grid-template-columns: 1fr; }
+  nav.top a.l.opt { display: none; }
+  h2 { font-size: 16px; }
+}
+</style>
+</head>
+<body>
+
+<nav class="top">
+  <div class="wrap">
+    <a class="brand" href="#">DOOMROGUE</a>
+    <a class="l" href="#download">Download</a>
+    <a class="l" href="#play">How to play</a>
+    <a class="l" href="#perks">Perks</a>
+    <a class="l opt" href="#loot">Loot</a>
+    <a class="l opt" href="#faq">FAQ</a>
+    <span class="spacer"></span>
+    <a class="l" id="gh-link" href="https://github.com/">GitHub</a>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="wrap hero-grid">
+    <div>
+      <h1 class="logo">DOOM<br>ROGUE</h1>
+      <p class="tagline">Doom, but every run is a brand-new dungeon. One life.</p>
+      <p class="sub">12 procedurally generated floors, perks on every level-up, weapons that roll rarities, and a boss waiting at the bottom. Free, built on GZDoom and Freedoom.</p>
+      <div class="dl-row">
+        <a class="btn" id="dl-main" href="#download">Download <small id="dl-os">for your OS</small></a>
+        <a class="btn alt" href="#play">How to play</a>
+      </div>
+      <div class="other-dl" id="dl-other">Windows · macOS · Linux <span class="ver" id="ver"></span></div>
+    </div>
+    <div><img class="shot" src="img/hero.jpg" alt="A legendary plasma rifle glowing gold on a raised platform, with monsters behind it" width="1024" height="800"></div>
+  </div>
+</header>
+
+<section id="about">
+  <div class="wrap">
+    <h2>WHAT IS IT</h2>
+    <div class="features">
+      <div class="card"><div class="ico">#</div><h3>Fresh dungeons</h3><p>Every run builds 12 new floors: rooms, corridors, doors, pillars, platforms and toxic pools. The exit sits in a locked vault; find the keycard first.</p></div>
+      <div class="card"><div class="ico">+</div><h3>Perks</h3><p>Kills give XP. Every level-up pauses the game and offers three perks. 13 perks, most stack. Build a vampire, a glass cannon, or a walking tank.</p></div>
+      <div class="card"><div class="ico">*</div><h3>Loot rarities</h3><p>Weapons roll Common to <span class="rar l">Legendary</span>, with bonus damage, crits and lifesteal. Rare drops glow in their color.</p></div>
+      <div class="card"><div class="ico">!</div><h3>Permadeath</h3><p>One life. Die and the dungeon is gone, and the next run is a new one. Beat the Cyberdemon on floor 12 to win.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="screens">
+  <div class="wrap">
+    <h2>SCREENSHOTS</h2>
+    <div class="gallery">
+      <figure><a href="img/perks.jpg"><img class="shot" src="img/perks.jpg" alt="Level-up perk choice screen with three perk cards" loading="lazy"></a><figcaption>Level up: pick 1 of 3 perks</figcaption></figure>
+      <figure><a href="img/platform.jpg"><img class="shot" src="img/platform.jpg" alt="Large room with a raised platform and monsters" loading="lazy"></a><figcaption>Raised platforms and wide arenas</figcaption></figure>
+      <figure><a href="img/pool.jpg"><img class="shot" src="img/pool.jpg" alt="Room with a nukage pool and a waiting enemy" loading="lazy"></a><figcaption>Toxic pools hurt. Watch your step.</figcaption></figure>
+      <figure><a href="img/room.jpg"><img class="shot" src="img/room.jpg" alt="Stone room full of monsters on a later floor" loading="lazy"></a><figcaption>Deeper floors bring nastier crowds</figcaption></figure>
+      <figure><a href="img/death.jpg"><img class="shot" src="img/death.jpg" alt="Run summary after death showing seed, floor, level and best weapon" loading="lazy"></a><figcaption>Run summary when you die</figcaption></figure>
+      <figure><a href="img/maps.png"><img class="shot" src="img/maps.png" alt="Top-down maps of three generated floors" style="image-rendering: pixelated; background:#000" loading="lazy"></a><figcaption>Three generated floors from one seed (top-down)</figcaption></figure>
+    </div>
+  </div>
+</section>
+
+<section id="download">
+  <div class="wrap">
+    <h2>DOWNLOAD &amp; INSTALL</h2>
+    <p class="lead">Unzip, double-click, play. The first launch downloads the GZDoom engine and the free Freedoom assets (about 50&nbsp;MB) into a <code>data</code> folder next to the game.</p>
+    <div class="install">
+      <div class="card" id="os-win">
+        <h3>WINDOWS</h3>
+        <p><a class="btn" id="dl-win" href="#">Download .zip</a></p>
+        <ol>
+          <li>Unzip <code>DoomRogue-windows.zip</code> somewhere like <code>Documents\DoomRogue</code>.</li>
+          <li>Double-click <code>DoomRogue.exe</code>.</li>
+          <li>If Windows shows <em>“Windows protected your PC”</em>, click <b>More info → Run anyway</b>. The game isn't code-signed yet.</li>
+        </ol>
+        <div class="note">Windows 10 or 11, 64-bit. Nothing else to install.</div>
+      </div>
+      <div class="card" id="os-mac">
+        <h3>MACOS</h3>
+        <p><a class="btn" id="dl-mac" href="#">Download .zip</a></p>
+        <ol>
+          <li>Unzip <code>DoomRogue-mac-linux.zip</code>.</li>
+          <li><b>Right-click</b> <code>DoomRogue.command</code> → <b>Open</b> → <b>Open</b>. This is only needed the first time, because the file isn't signed.</li>
+          <li>If macOS offers to install <em>command line developer tools</em>, accept. That installs Python. Then open it again.</li>
+        </ol>
+        <div class="note">Apple Silicon and Intel. Uses your GZDoom/UZDoom in Applications if you have one.</div>
+      </div>
+      <div class="card" id="os-linux">
+        <h3>LINUX</h3>
+        <p><a class="btn" id="dl-linux" href="#">Download .zip</a></p>
+        <ol>
+          <li>Install GZDoom or UZDoom (distro package or the official <code>.deb</code>).</li>
+          <li>Unzip <code>DoomRogue-mac-linux.zip</code>.</li>
+          <li>Run <code>python3 doomrogue.py</code></li>
+        </ol>
+        <div class="note">Engine not on your PATH? Use <code>--engine /path/to/gzdoom</code>.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="play">
+  <div class="wrap">
+    <h2>HOW TO PLAY</h2>
+    <div class="two">
+      <div>
+        <h3>A run, start to finish</h3>
+        <ul class="tight">
+          <li>You start on <b>Floor 1</b> with a pistol. Each floor is new for this run.</li>
+          <li>Find the <b>keycard</b> (red, blue or yellow). It opens the matching <b>vault door</b> around the glowing exit gate.</li>
+          <li>Step on the gate to go down a floor. Your weapons, ammo, perks and XP come with you.</li>
+          <li>Monsters get tougher every floor (+7% health each floor, and new types every few floors).</li>
+          <li><b>Floor 12</b> is a boss arena. The gate stays sealed until the Cyberdemon dies.</li>
+          <li>Die and the run is over. You'll see a summary, and the launcher offers a fresh dungeon.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Controls &amp; screen</h3>
+        <ul class="tight">
+          <li>Default controls: <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> to move, mouse to aim, left click to shoot, <kbd>E</kbd> to open doors, <kbd>Space</kbd> to jump. Rebind them under <i>Options → Customize Controls</i>.</li>
+          <li>Level-up menu: <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd>, or arrows + <kbd>Enter</kbd>, or click a card.</li>
+          <li>The panel on the left shows your floor, level, XP bar, kills, perks and the rarity of your current weapon.</li>
+          <li>You can save mid-run. If you quit while alive, the launcher offers <b>Resume</b>. Dead runs' saves are deleted.</li>
+          <li>Replay a specific dungeon with <code>--seed 1234</code>. The seed is on the death screen. Difficulty: <code>--skill 1</code>–<code>5</code>.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="perks">
+  <div class="wrap">
+    <h2>PERKS</h2>
+    <p class="lead">Each level-up offers three random perks you haven't maxed out. Rare glowing <b>perk shards</b> dropped by monsters give an extra pick.</p>
+    <div class="table-wrap">
+    <table>
+      <thead><tr><th>Perk</th><th>Effect (per rank)</th><th>Max</th></tr></thead>
+      <tbody>
+        <tr><td class="n">Brute Force</td><td>+15% damage with all weapons</td><td class="r">5</td></tr>
+        <tr><td class="n">Thick Skin</td><td>Take 12% less damage</td><td class="r">4</td></tr>
+        <tr><td class="n">Vampirism</td><td>Heal for 4% of all damage you deal</td><td class="r">3</td></tr>
+        <tr><td class="n">Vitality</td><td>+25 max health, and heals 25 right away</td><td class="r">4</td></tr>
+        <tr><td class="n">Fleet Foot</td><td>Move 8% faster</td><td class="r">3</td></tr>
+        <tr><td class="n">Regeneration</td><td>Slowly regenerate health up to 60% of max (faster per rank)</td><td class="r">3</td></tr>
+        <tr><td class="n">Keen Eye</td><td>+8% chance to crit for 2.5× damage</td><td class="r">4</td></tr>
+        <tr><td class="n">Adrenaline</td><td>Every kill heals 3 health</td><td class="r">3</td></tr>
+        <tr><td class="n">Volatile Corpses</td><td>12% chance a kill explodes and hurts nearby monsters (never you)</td><td class="r">3</td></tr>
+        <tr><td class="n">Scavenger</td><td>Monsters drop loot more often (+10% per rank)</td><td class="r">3</td></tr>
+        <tr><td class="n">Treasure Hunter</td><td>Weapons roll higher rarities</td><td class="r">3</td></tr>
+        <tr><td class="n">Armorer</td><td>+25 armor at the start of each floor</td><td class="r">3</td></tr>
+        <tr><td class="n">Quartermaster</td><td>Restock 20% of every ammo type at the start of each floor</td><td class="r">2</td></tr>
+      </tbody>
+    </table>
+    </div>
+  </div>
+</section>
+
+<section id="loot">
+  <div class="wrap">
+    <div class="two">
+      <div>
+        <h2>LOOT</h2>
+        <p class="lead">Every weapon you find rolls a rarity, and it glows in that color. Deeper floors and the Treasure Hunter perk roll better. Weapons dropped by monsters roll a bit worse.</p>
+        <div class="table-wrap">
+        <table>
+          <thead><tr><th>Rarity</th><th>Bonuses for that weapon</th></tr></thead>
+          <tbody>
+            <tr><td class="rar c">Common</td><td>none</td></tr>
+            <tr><td class="rar u">Uncommon</td><td>+8–14% damage</td></tr>
+            <tr><td class="rar r">Rare</td><td>+15–25% damage, +4–7% crit</td></tr>
+            <tr><td class="rar e">Epic</td><td>+25–35% damage, +7–10% crit, 2–3% lifesteal</td></tr>
+            <tr><td class="rar l">Legendary</td><td>+40–55% damage, +10–14% crit, 3–5% lifesteal</td></tr>
+          </tbody>
+        </table>
+        </div>
+        <p class="sub" style="margin-top:14px">Found a duplicate? You keep the best of each stat plus +3% damage. Monsters also drop ammo for weapons you own, plus health and armor bonuses.</p>
+      </div>
+      <div>
+        <h2>VICTORY</h2>
+        <img class="shot" src="img/victory.jpg" alt="Victory screen with run summary" loading="lazy">
+        <p class="sub" style="margin-top:12px">Kill the Cyberdemon, step on the gate, see this. Good luck.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="faq">
+  <div class="wrap">
+    <h2>FAQ &amp; TROUBLESHOOTING</h2>
+    <details><summary>Windows says “Windows protected your PC”</summary><div>The .exe isn't code-signed (signing certificates cost money). Click <b>More info → Run anyway</b>. Some antivirus tools also flag one-file Python executables by mistake. The game is built in the open by GitHub Actions from the source in the repository.</div></details>
+    <details><summary>macOS says the file “cannot be opened”</summary><div>Right-click <code>DoomRogue.command</code> → <b>Open</b> → <b>Open</b>. You only need to do this once. If it complains about <code>python3</code>, run <code>xcode-select --install</code> in Terminal and try again.</div></details>
+    <details><summary>The game window opens and closes immediately</summary><div>Open <code>data/last_run.log</code> next to the game and look at the last lines. On Windows, make sure your graphics drivers are up to date (GZDoom needs OpenGL 3.3 or Vulkan). Then open an issue on GitHub and attach that log.</div></details>
+    <details><summary>Can I use the original Doom II instead of Freedoom?</summary><div>Yes, if you own it: start with <code>--iwad path/to/doom2.wad</code> (from a terminal, or a shortcut with that argument).</div></details>
+    <details><summary>Where are my saves and downloads? How do I uninstall?</summary><div>Everything lives in the <code>data</code> folder next to the game: the engine, Freedoom, generated dungeons, saves and logs. To uninstall, delete the DoomRogue folder.</div></details>
+    <details><summary>I found a bug / have an idea</summary><div>Open an issue on <a class="gh-issues" href="https://github.com/">GitHub</a>. For bugs, include your OS, the seed (from the death screen) and <code>data/last_run.log</code>.</div></details>
+    <details><summary>Does it work with UZDoom?</summary><div>It's developed and tested on GZDoom 4.14. UZDoom (the GZDoom successor) uses the same scripting and should work. If you have it installed in Applications (macOS) or on your PATH, the launcher uses it automatically.</div></details>
+  </div>
+</section>
+
+<section id="tinker">
+  <div class="wrap two">
+    <div>
+      <h2>UNDER THE HOOD</h2>
+      <ul class="tight">
+        <li><code>dr_gen.py</code>: the level generator. Pure Python, writes UDMF maps into a WAD.</li>
+        <li><code>mod/scripts/*.zs</code>: ZScript for XP, perks, loot, HUD, menus and permadeath.</li>
+        <li><code>doomrogue.py</code>: the launcher (seed → generate → play → repeat).</li>
+        <li>Every push is checked by CI. Each release tag builds the Windows .exe automatically.</li>
+      </ul>
+    </div>
+    <div>
+      <h2>CREDITS</h2>
+      <ul class="tight">
+        <li>Engine: <a href="https://zdoom.org">GZDoom</a> (GPL) by the ZDoom team.</li>
+        <li>Art, sound and music: <a href="https://freedoom.github.io">Freedoom</a> (BSD license).</li>
+        <li>DoomRogue: MIT license, a fan project by Șerban Căpățînă.</li>
+        <li>DOOM is a trademark of id Software. This project is not affiliated with or endorsed by id Software or Bethesda.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <span class="pixel">DOOMROGUE</span> &nbsp;·&nbsp; <a class="gh-repo" href="https://github.com/">Source on GitHub</a> &nbsp;·&nbsp; <a class="gh-issues" href="https://github.com/">Report a bug</a>
+  </div>
+</footer>
+
+<script>
+(function () {
+  // Work out the repo from the GitHub Pages URL (user.github.io/repo), with a fallback.
+  var FALLBACK_USER = "__GH_USER__", REPO = "doomrogue";
+  var user = FALLBACK_USER;
+  var host = location.hostname;
+  if (/\.github\.io$/.test(host)) {
+    user = host.split(".")[0];
+    var seg = location.pathname.split("/").filter(Boolean)[0];
+    if (seg) REPO = seg;
+  }
+  var repo = "https://github.com/" + user + "/" + REPO;
+  var rel = repo + "/releases/latest/download/";
+  var win = rel + "DoomRogue-windows.zip", mac = rel + "DoomRogue-mac-linux.zip";
+
+  document.getElementById("gh-link").href = repo;
+  document.querySelectorAll(".gh-repo").forEach(function (a) { a.href = repo; });
+  document.querySelectorAll(".gh-issues").forEach(function (a) { a.href = repo + "/issues"; });
+  document.getElementById("dl-win").href = win;
+  document.getElementById("dl-mac").href = mac;
+  document.getElementById("dl-linux").href = mac;
+
+  var ua = navigator.userAgent, os = "win";
+  if (/Mac/i.test(ua) && !/iPhone|iPad/i.test(ua)) os = "mac";
+  else if (/Linux|X11/i.test(ua) && !/Android/i.test(ua)) os = "linux";
+  else if (/Android|iPhone|iPad/i.test(ua)) os = "mobile";
+
+  var main = document.getElementById("dl-main"), label = document.getElementById("dl-os");
+  if (os === "win") { main.href = win; label.textContent = "for Windows"; }
+  else if (os === "mac") { main.href = mac; label.textContent = "for macOS"; }
+  else if (os === "linux") { main.href = mac; label.textContent = "for Linux"; }
+  else { label.textContent = "(on a computer)"; }
+  var card = document.getElementById("os-" + os);
+  if (card) card.classList.add("current");
+  document.getElementById("dl-other").innerHTML =
+    'Also for <a href="' + win + '">Windows</a> · <a href="' + mac + '">macOS</a> · <a href="' + mac + '">Linux</a>' +
+    ' · <a href="' + repo + '/releases">all releases</a> <span class="ver" id="ver"></span>';
+
+  // Show the latest version number (public API, no auth needed).
+  fetch("https://api.github.com/repos/" + user + "/" + REPO + "/releases/latest")
+    .then(function (r) { return r.ok ? r.json() : null; })
+    .then(function (j) { if (j && j.tag_name) document.getElementById("ver").textContent = j.tag_name; })
+    .catch(function () {});
+})();
+</script>
+</body>
+</html>

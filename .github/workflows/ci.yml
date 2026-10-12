@@ -1,0 +1,25 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  linux:
+    name: Generator + engine check (Linux)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Generator invariants
+        run: python3 tests/test_generator.py
+      - name: Install GZDoom
+        run: |
+          curl -sSL -o gzdoom.deb https://github.com/ZDoom/gzdoom/releases/download/g4.14.2/gzdoom_4.14.2_amd64.deb
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ./gzdoom.deb xvfb
+      - name: Self-test (downloads Freedoom, compiles the mod in the engine)
+        run: xvfb-run -a python3 doomrogue.py --self-test --engine /opt/gzdoom/gzdoom
