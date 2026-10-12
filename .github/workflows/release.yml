@@ -31,7 +31,17 @@ jobs:
         shell: bash
         run: |
           mkdir smoke && cp dist/DoomRogue.exe smoke/
-          cd smoke && ./DoomRogue.exe --self-test
+          cd smoke
+          set +e
+          ./DoomRogue.exe --self-test > selftest.txt 2>&1
+          rc=$?
+          # Surface the output as annotations (readable without signing in)
+          while IFS= read -r l; do echo "::notice title=self-test::$l"; done < selftest.txt
+          if [ -f data/selftest.log ]; then
+            grep -iE "error|fatal|opengl|vulkan|video|script parsing" data/selftest.log | head -20 |
+              while IFS= read -r l; do echo "::notice title=engine log::$l"; done
+          fi
+          exit $rc
       - name: Package
         shell: bash
         run: |

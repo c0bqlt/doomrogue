@@ -4,7 +4,7 @@
 
 DoomRogue is a roguelike mod for [GZDoom](https://zdoom.org). Each run generates 12 new floors. You level up, pick perks, find weapons with random rarities, and fight down to a Cyberdemon on floor 12. When you die, that dungeon is gone.
 
-**[Website, downloads and full guide →](https://__GH_USER__.github.io/doomrogue/)**
+**[Website, downloads and full guide →](https://c0bqlt.github.io/doomrogue/)**
 
 ![DoomRogue screenshot](docs/img/hero.jpg)
 
